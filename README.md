@@ -190,17 +190,3 @@ GET /API.php?action=numero_positivo&numero=5
      ```text
      http://atividadeengenharia2.infinityfree.me/API.php?action=numero_positivo&numero=5
      ```
-
----
-
-## Instruções para Hospedar a API
-
-1. Crie uma conta em [InfinityFree](https://www.infinityfree.net/).
-2. Faça o upload do arquivo `API.php` para a pasta **`htdocs`** (ou a pasta equivalente no servidor).
-3. Acesse a URL gerada para testar a API.
-
----
-
-## Conclusão
-
-Agora, sua API está configurada para validar e verificar dados como e-mail, telefone, CPF e números positivos. Basta fazer as requisições corretamente e você receberá a resposta correspondente.
