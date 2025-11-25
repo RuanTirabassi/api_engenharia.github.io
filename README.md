@@ -13,8 +13,6 @@ A API está acessível através de uma URL com parâmetros `GET`. Cada requisiç
 http://atividadeengenharia2.infinityfree.me/API.php?action=validar_email&email=exemplo@dominio.com
 ```
 
-**Nota**: Substitua `atividadeengenharia2.infinityfree.me` pelo seu subdomínio real.
-
 ## Métodos da API
 
 ### 1. Validar E-mail
@@ -232,30 +230,3 @@ Resposta:
   "mensagem": "E-mail inválido."
 }
 ```
-
-### **4. Usar parâmetros desconhecidos**
-
-Se um parâmetro **`action`** inválido for passado, a API retornará um erro informando que a ação não é válida. Exemplo:
-
-```
-http://atividadeengenharia2.infinityfree.me/API.php?action=acao_invalida&email=teste@dominio.com
-```
-
-Resposta:
-```json
-{
-  "erro": "Ação inválida. Use uma das seguintes: validar_email, validar_telefone, validar_cpf, numero_positivo."
-}
-```
-
----
-
-## **Recomendações**
-
-- **Utilize sempre o parâmetro correto** para garantir que a API execute a validação desejada (ex: `action=validar_email`).
-- **Não envie dados vazios ou mal formatados** para evitar que a API retorne erros.
-- **Testes**: Utilize as URLs acima para testar todos os tipos de validação disponíveis.
-
----
-
-Se tiver dúvidas ou precisar de mais informações, entre em contato! A API foi desenvolvida para ser simples e funcional, mas sempre estaremos aqui para ajudar. 😊
