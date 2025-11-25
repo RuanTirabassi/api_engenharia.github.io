@@ -38,7 +38,8 @@ GET /API.php?action=validar_email&email=teste@dominio.com
     {
       "acao": "validar_email",
       "email": "teste@dominio.com",
-      "valido": true
+      "valido": true,
+      "mensagem": "E-mail válido."
     }
     ```
 
@@ -75,7 +76,8 @@ GET /API.php?action=validar_telefone&telefone=999999999
     {
       "acao": "validar_telefone",
       "telefone": "999999999",
-      "valido": true
+      "valido": true,
+      "mensagem": "Número de telefone válido."
     }
     ```
 
@@ -112,7 +114,8 @@ GET /API.php?action=validar_cpf&cpf=12345678909
     {
       "acao": "validar_cpf",
       "cpf": "12345678909",
-      "valido": true
+      "valido": true,
+      "mensagem": "CPF válido."
     }
     ```
 
@@ -149,11 +152,12 @@ GET /API.php?action=numero_positivo&numero=5
     {
       "acao": "numero_positivo",
       "numero": "5",
-      "valido": true
+      "valido": true,
+      "mensagem": "Número positivo."
     }
     ```
 
-- **Se o número não for positivo**:
+- **Se não for positivo**:
     ```json
     {
       "acao": "numero_positivo",
@@ -165,7 +169,7 @@ GET /API.php?action=numero_positivo&numero=5
 
 ---
 
-## Como Testar
+## **Como Testar**
 
 1. **Validar E-mail**:
    - Exemplo de URL para testar:
@@ -190,3 +194,68 @@ GET /API.php?action=numero_positivo&numero=5
      ```text
      http://atividadeengenharia2.infinityfree.me/API.php?action=numero_positivo&numero=5
      ```
+
+---
+
+## **O que Não Fazer para Evitar Erros**
+
+### **1. Não informar os parâmetros obrigatórios**
+
+Se você não informar um parâmetro obrigatório, a API retornará um erro. Por exemplo:
+- Não informar o parâmetro **`email`** em uma requisição para validar e-mail resultará em:
+  ```
+  Erro: Parâmetro 'email' é obrigatório e não pode estar vazio.
+  ```
+
+### **2. Passar valores vazios**
+
+Certifique-se de que o valor do parâmetro **não seja vazio**. Por exemplo, se você passar um valor vazio para o CPF, telefone ou e-mail, a API retornará um erro de falta de valor.
+
+### **3. Passar valores no formato errado**
+
+A API possui validações de formato para **e-mails**, **telefones** e **CPFs**. Se os dados enviados não estiverem no formato esperado, a resposta será:
+
+- **E-mail inválido** se o e-mail não tiver o formato adequado.
+- **Telefone inválido** se o telefone não for composto apenas por 9 dígitos.
+- **CPF inválido** se o CPF não seguir o formato de 11 números.
+
+Por exemplo:
+```
+http://atividadeengenharia2.infinityfree.me/API.php?action=validar_email&email=teste@dominio
+```
+Resposta:
+```json
+{
+  "acao": "validar_email",
+  "email": "teste@dominio",
+  "valido": false,
+  "mensagem": "E-mail inválido."
+}
+```
+
+### **4. Usar parâmetros desconhecidos**
+
+Se um parâmetro **`action`** inválido for passado, a API retornará um erro informando que a ação não é válida. Exemplo:
+
+```
+http://atividadeengenharia2.infinityfree.me/API.php?action=acao_invalida&email=teste@dominio.com
+```
+
+Resposta:
+```json
+{
+  "erro": "Ação inválida. Use uma das seguintes: validar_email, validar_telefone, validar_cpf, numero_positivo."
+}
+```
+
+---
+
+## **Recomendações**
+
+- **Utilize sempre o parâmetro correto** para garantir que a API execute a validação desejada (ex: `action=validar_email`).
+- **Não envie dados vazios ou mal formatados** para evitar que a API retorne erros.
+- **Testes**: Utilize as URLs acima para testar todos os tipos de validação disponíveis.
+
+---
+
+Se tiver dúvidas ou precisar de mais informações, entre em contato! A API foi desenvolvida para ser simples e funcional, mas sempre estaremos aqui para ajudar. 😊
