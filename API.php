@@ -1,12 +1,29 @@
 <?php
-// Define que a resposta será em HTML
+// Define que a resposta será em HTML (visualização do JSON)
 header('Content-Type: text/html; charset=utf-8');
 
 // Lê a ação (método) que o usuário quer executar
 $action = isset($_GET['action']) ? $_GET['action'] : null;
 
-// Função para enviar resposta HTML e finalizar
-function send_html_response($content) {
+// Função para enviar resposta HTML exibindo exatamente a resposta da "API" (array -> JSON)
+function send_html_response(array $response)
+{
+    // JSON que representa a resposta da API
+    $json = json_encode($response, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+
+    // Classes de status para estilizar (baseado em 'valido', se existir)
+    $statusClass = '';
+    if (isset($response['valido'])) {
+        if ($response['valido'] === true) {
+            $statusClass = 'valid';
+        } elseif ($response['valido'] === false) {
+            $statusClass = 'invalid';
+        }
+    }
+
+    // Escapar JSON para exibir em HTML
+    $jsonEscaped = htmlspecialchars($json, ENT_QUOTES, 'UTF-8');
+
     echo "
     <html lang='pt-BR'>
     <head>
@@ -31,48 +48,71 @@ function send_html_response($content) {
                 color: #4CAF50;
             }
             .result {
-                font-size: 1.2em;
+                font-size: 1em;
                 margin-top: 10px;
             }
             .valid {
                 color: green;
+                font-weight: bold;
             }
             .invalid {
-                color: red;
-            }
-            .error {
                 color: red;
                 font-weight: bold;
             }
             .response-block {
-                margin-bottom: 15px;
-                padding: 10px;
+                margin-bottom: 10px;
+                padding: 8px;
                 background-color: #f9f9f9;
                 border: 1px solid #ddd;
                 border-radius: 5px;
             }
-            .response-block span {
+            .response-block span.key {
                 font-weight: bold;
+            }
+            pre {
+                background-color: #272822;
+                color: #f8f8f2;
+                padding: 15px;
+                border-radius: 5px;
+                overflow-x: auto;
+                font-size: 0.9em;
+            }
+            .status-label {
+                margin-top: 10px;
             }
         </style>
     </head>
     <body>
         <div class='container'>
             <h1>Resultado da Validação</h1>
+
             <div class='result'>
-                <div class='response-block'>
-                    <span>Ação:</span> $content->acao
+    ";
+
+    // Exibe cada campo da resposta (EXATAMENTE o que está na resposta da API)
+    foreach ($response as $key => $value) {
+        // Converte boolean para 'true' / 'false' para ficar mais claro
+        if (is_bool($value)) {
+            $displayValue = $value ? 'true' : 'false';
+        } else {
+            $displayValue = $value;
+        }
+
+        // Aplica classe de status se for o campo 'valido'
+        $extraClass = ($key === 'valido') ? " $statusClass" : '';
+
+        echo "
+                <div class='response-block$extraClass'>
+                    <span class='key'>{$key}:</span> " . htmlspecialchars((string)$displayValue, ENT_QUOTES, 'UTF-8') . "
                 </div>
-                <div class='response-block'>
-                    <span>Valor:</span> $content->valor
-                </div>
-                <div class='response-block'>
-                    <span>Status:</span> <span class='$content->status'>$content->status</span>
-                </div>
-                <div class='response-block'>
-                    <span>Mensagem:</span> $content->mensagem
-                </div>
+        ";
+    }
+
+    echo "
             </div>
+
+            <h2>JSON da Resposta da API</h2>
+            <pre>{$jsonEscaped}</pre>
         </div>
     </body>
     </html>
@@ -80,9 +120,16 @@ function send_html_response($content) {
     exit;
 }
 
-// Se nenhuma ação foi informada
+// -------------------------
+// Tratamento quando nenhuma ação foi informada
+// -------------------------
 if ($action === null) {
-    send_html_response("<span class='error'>Erro:</span> Nenhuma ação informada. Use o parâmetro 'action' (validar_email, validar_telefone, validar_cpf, numero_positivo).");
+    $response = [
+        'acao'     => null,
+        'valido'   => false,
+        'mensagem' => "Nenhuma ação informada. Use o parâmetro 'action' (validar_email, validar_telefone, validar_cpf, numero_positivo)."
+    ];
+    send_html_response($response);
 }
 
 switch ($action) {
@@ -91,28 +138,26 @@ switch ($action) {
     // Exemplo: api.php?action=validar_email&email=exemplo@dominio.com
     // -------------------------
     case 'validar_email':
-        if (!isset($_GET['email']) || empty($_GET['email'])) {
-            send_html_response("<span class='error'>Erro:</span> Parâmetro 'email' é obrigatório e não pode estar vazio.");
+        if (!isset($_GET['email']) || $_GET['email'] === '') {
+            $response = [
+                'acao'     => 'validar_email',
+                'email'    => null,
+                'valido'   => false,
+                'mensagem' => "Parâmetro 'email' é obrigatório e não pode estar vazio."
+            ];
+            send_html_response($response);
         }
 
-        $email = $_GET['email'];
-        // Verifica se o e-mail tem formato válido (expressão regular)
-        if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $content = (object) [
-                'acao' => 'validar_email',
-                'valor' => $email,
-                'status' => 'Válido',
-                'mensagem' => 'E-mail válido.'
-            ];
-        } else {
-            $content = (object) [
-                'acao' => 'validar_email',
-                'valor' => $email,
-                'status' => 'Inválido',
-                'mensagem' => 'E-mail inválido.'
-            ];
-        }
-        send_html_response($content);
+        $email  = $_GET['email'];
+        $valido = filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
+
+        $response = [
+            'acao'     => 'validar_email',
+            'email'    => $email,
+            'valido'   => $valido,
+            'mensagem' => $valido ? 'E-mail válido.' : 'E-mail inválido.'
+        ];
+        send_html_response($response);
         break;
 
     // -------------------------
@@ -120,28 +165,27 @@ switch ($action) {
     // Exemplo: api.php?action=validar_telefone&telefone=999999999
     // -------------------------
     case 'validar_telefone':
-        if (!isset($_GET['telefone']) || empty($_GET['telefone'])) {
-            send_html_response("<span class='error'>Erro:</span> Parâmetro 'telefone' é obrigatório e não pode estar vazio.");
+        if (!isset($_GET['telefone']) || $_GET['telefone'] === '') {
+            $response = [
+                'acao'     => 'validar_telefone',
+                'telefone' => null,
+                'valido'   => false,
+                'mensagem' => "Parâmetro 'telefone' é obrigatório e não pode estar vazio."
+            ];
+            send_html_response($response);
         }
 
         $telefone = $_GET['telefone'];
-        // Valida o telefone (aqui é uma validação simples de 9 dígitos com apenas números)
-        if (preg_match("/^[0-9]{9}$/", $telefone)) {
-            $content = (object) [
-                'acao' => 'validar_telefone',
-                'valor' => $telefone,
-                'status' => 'Válido',
-                'mensagem' => 'Número de telefone válido.'
-            ];
-        } else {
-            $content = (object) [
-                'acao' => 'validar_telefone',
-                'valor' => $telefone,
-                'status' => 'Inválido',
-                'mensagem' => 'Número de telefone inválido.'
-            ];
-        }
-        send_html_response($content);
+        // Valida o telefone (9 dígitos numéricos)
+        $valido = preg_match("/^[0-9]{9}$/", $telefone) === 1;
+
+        $response = [
+            'acao'     => 'validar_telefone',
+            'telefone' => $telefone,
+            'valido'   => $valido,
+            'mensagem' => $valido ? 'Número de telefone válido.' : 'Número de telefone inválido.'
+        ];
+        send_html_response($response);
         break;
 
     // -------------------------
@@ -149,28 +193,27 @@ switch ($action) {
     // Exemplo: api.php?action=validar_cpf&cpf=12345678909
     // -------------------------
     case 'validar_cpf':
-        if (!isset($_GET['cpf']) || empty($_GET['cpf'])) {
-            send_html_response("<span class='error'>Erro:</span> Parâmetro 'cpf' é obrigatório e não pode estar vazio.");
+        if (!isset($_GET['cpf']) || $_GET['cpf'] === '') {
+            $response = [
+                'acao'     => 'validar_cpf',
+                'cpf'      => null,
+                'valido'   => false,
+                'mensagem' => "Parâmetro 'cpf' é obrigatório e não pode estar vazio."
+            ];
+            send_html_response($response);
         }
 
         $cpf = $_GET['cpf'];
-        // Valida o CPF (bem simplificado)
-        if (preg_match("/^\d{11}$/", $cpf)) {
-            $content = (object) [
-                'acao' => 'validar_cpf',
-                'valor' => $cpf,
-                'status' => 'Válido',
-                'mensagem' => 'CPF válido.'
-            ];
-        } else {
-            $content = (object) [
-                'acao' => 'validar_cpf',
-                'valor' => $cpf,
-                'status' => 'Inválido',
-                'mensagem' => 'CPF inválido.'
-            ];
-        }
-        send_html_response($content);
+        // Validação simplificada: apenas 11 dígitos numéricos
+        $valido = preg_match("/^\d{11}$/", $cpf) === 1;
+
+        $response = [
+            'acao'     => 'validar_cpf',
+            'cpf'      => $cpf,
+            'valido'   => $valido,
+            'mensagem' => $valido ? 'CPF válido.' : 'CPF inválido.'
+        ];
+        send_html_response($response);
         break;
 
     // -------------------------
@@ -178,33 +221,47 @@ switch ($action) {
     // Exemplo: api.php?action=numero_positivo&numero=5
     // -------------------------
     case 'numero_positivo':
-        if (!isset($_GET['numero']) || empty($_GET['numero'])) {
-            send_html_response("<span class='error'>Erro:</span> Parâmetro 'numero' é obrigatório e não pode estar vazio.");
+        if (!isset($_GET['numero']) || $_GET['numero'] === '') {
+            $response = [
+                'acao'     => 'numero_positivo',
+                'numero'   => null,
+                'valido'   => false,
+                'mensagem' => "Parâmetro 'numero' é obrigatório e não pode estar vazio."
+            ];
+            send_html_response($response);
         }
 
         $numero = $_GET['numero'];
-        // Verifica se o número é positivo
-        if (is_numeric($numero) && $numero > 0) {
-            $content = (object) [
-                'acao' => 'numero_positivo',
-                'valor' => $numero,
-                'status' => 'Positivo',
-                'mensagem' => 'Número positivo.'
+
+        if (!is_numeric($numero)) {
+            $response = [
+                'acao'     => 'numero_positivo',
+                'numero'   => $numero,
+                'valido'   => false,
+                'mensagem' => "Parâmetro 'numero' deve ser numérico."
             ];
-        } else {
-            $content = (object) [
-                'acao' => 'numero_positivo',
-                'valor' => $numero,
-                'status' => 'Não Positivo',
-                'mensagem' => 'Número não é positivo.'
-            ];
+            send_html_response($response);
         }
-        send_html_response($content);
+
+        $valido = $numero > 0;
+
+        $response = [
+            'acao'     => 'numero_positivo',
+            'numero'   => $numero,
+            'valido'   => $valido,
+            'mensagem' => $valido ? 'Número positivo.' : 'Número não é positivo.'
+        ];
+        send_html_response($response);
         break;
 
     // -------------------------
     // AÇÃO DESCONHECIDA
     // -------------------------
     default:
-        send_html_response("<span class='error'>Erro:</span> Ação inválida. Use uma das seguintes: validar_email, validar_telefone, validar_cpf, numero_positivo.");
+        $response = [
+            'acao'     => $action,
+            'valido'   => false,
+            'mensagem' => "Ação inválida. Use uma das seguintes: validar_email, validar_telefone, validar_cpf, numero_positivo."
+        ];
+        send_html_response($response);
 }
